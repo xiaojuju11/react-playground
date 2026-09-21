@@ -1,6 +1,6 @@
 import type { BabelFileResult, PluginObj } from "@babel/core";
 import type { Files } from "../../ReactPlayground/PlaygroundContext";
-import { ENTRY_FILE_NAME } from "../../ReactPlayground/files";
+import { ENTRY_FILE_NAME } from "./files";
 import { transform } from "@babel/standalone";
 import type { EditorFile } from "../CodeEditor/Editor";
 

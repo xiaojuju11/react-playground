@@ -3,7 +3,7 @@ import { compile } from './compiler'
 import { PlaygroundContext } from '../../ReactPlayground/PlaygroundContext'
 import Editor from '../CodeEditor/Editor'
 import iframeRaw from './iframe.html?raw'
-import { IMPORT_MAP_FILE_NAME } from '../../ReactPlayground/files.ts'
+import { IMPORT_MAP_FILE_NAME } from './files'
 
 
 export default function Preview() {
