@@ -1,4 +1,3 @@
-import React from 'react'
 import MonacoEditor from '@monaco-editor/react'
 import type { EditorProps, OnMount } from '@monaco-editor/react'
 import { createATA } from './Editor/ata.ts'

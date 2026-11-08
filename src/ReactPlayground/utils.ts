@@ -1,6 +1,6 @@
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
-import type { Files } from './PlaygroundContext'
+import type { Files } from './context'
 interface LanguageMap {
   js: 'javascript',
   tsx: 'typescript',

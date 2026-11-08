@@ -1,49 +1,26 @@
-import { createContext, useState, type PropsWithChildren } from 'react'
-import type { EditorFile } from '../components/CodeEditor/Editor.tsx'
+import { useCallback, useMemo, useState, type PropsWithChildren } from 'react'
 import { getFileNameLanguage } from './utils.ts'
-import { initFiles } from './files.ts'
+import { APP_COMPONENT_FILE_NAME, initFiles } from './files.ts'
+import { PlaygroundContext, type Files, type PlaygroundContextValue } from './context.ts'
 
-
-export interface Files {
-  [key: string]: EditorFile
+/** 不可变地删掉一个 key，避免直接 delete 原对象 */
+function omitFile(files: Files, fileName: string): Files {
+  if (!files[fileName]) return files
+  const nextFiles = { ...files }
+  delete nextFiles[fileName]
+  return nextFiles
 }
-
-export interface PlaygroundContext {
-  selectedFileName: string,
-  files: Files,
-  setSelectedFileName: (fileName: string) => void,
-  setFiles: (files: Files) => void,
-  removeFile: (fileName: string) => void,
-  updateFileName: (oldFileName: string, newFileName: string) => void,
-  addFile: (fileName: string) => void,
-}
-
-// files = {
-//   'App.tsx': {
-//     name: 'App.tsx',
-//     value: '',
-//     language: 'typescriptreact',
-//   },
-//   'index.tsx': {
-//     name: 'index.tsx',
-//     value: '',
-//     language: 'typescriptreact',
-//   },
-// }
-
-
-export const PlaygroundContext = createContext<PlaygroundContext>({  // 创建一个上下文对象，它是响应式的
-  selectedFileName: 'App.tsx',
-} as PlaygroundContext)  // 类型断言，告诉 ts 这就是上下文对象，你别管
-
 
 export const PlaygroundProvider = (props: PropsWithChildren) => {
   const { children } = props
   const [files, setFiles] = useState<Files>(initFiles)
-  const [selectedFileName, setSelectedFileName] = useState<string>('App.tsx')
+  const [selectedFileName, setSelectedFileName] = useState<string>(APP_COMPONENT_FILE_NAME)
 
-  const addFile = (name: string) => {
+  // 三个操作都基于函数式更新，避免闭包里读到过期的 files
+  const addFile = useCallback((name: string) => {
+    if (!name) return
     setFiles((prevFiles) => {
+      if (prevFiles[name]) return prevFiles
       return {
         ...prevFiles,
         [name]: {
@@ -53,29 +30,19 @@ export const PlaygroundProvider = (props: PropsWithChildren) => {
         },
       }
     })
-  }
+  }, [])
 
-  // const removeFile = (name: string) => {
-  //   delete files[name]
-  //   setFiles({...files})
-  // }
+  const removeFile = useCallback((name: string) => {
+    setFiles((prevFiles) => omitFile(prevFiles, name))
+  }, [])
 
-  const removeFile = (name: string) => {
+  const updateFileName = useCallback((oldFileName: string, newFileName: string) => {
     setFiles((prevFiles) => {
-      const { [name]: _, ...restFiles } = prevFiles
-      return restFiles
-    })
-  }
-
-  const updateFileName = (oldFileName: string, newFileName: string) => {
-    if (!files[oldFileName] || !newFileName || oldFileName === newFileName) {
-      return
-    }
-
-    setFiles((prevFiles) => {
-      const { [oldFileName]: oldFile, ...restFiles } = prevFiles
+      const oldFile = prevFiles[oldFileName]
+      // 空名字、重名、名字没变都不处理，避免覆盖掉已有文件
+      if (!oldFile || !newFileName || newFileName === oldFileName) return prevFiles
       return {
-        ...restFiles,
+        ...omitFile(prevFiles, oldFileName),
         [newFileName]: {
           ...oldFile,
           name: newFileName,
@@ -83,20 +50,21 @@ export const PlaygroundProvider = (props: PropsWithChildren) => {
         },
       }
     })
-  }
-  
+  }, [])
+
+  // 缓存 context value，避免无关的状态变化把整棵子树都重渲染一遍
+  const value = useMemo<PlaygroundContextValue>(() => ({
+    selectedFileName,
+    files,
+    setSelectedFileName,
+    setFiles,
+    addFile,
+    removeFile,
+    updateFileName,
+  }), [selectedFileName, files, addFile, removeFile, updateFileName])
+
   return (
-    <PlaygroundContext.Provider 
-      value={{
-        selectedFileName,
-        files,
-        setSelectedFileName,
-        setFiles,
-        addFile,
-        removeFile,
-        updateFileName,
-      }}
-    >
+    <PlaygroundContext.Provider value={value}>
       {children}
     </PlaygroundContext.Provider>
   )

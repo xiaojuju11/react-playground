@@ -15,12 +15,9 @@ export function createATA(onDownloadFile: (code: string, path: string) => void) 
       started: () => {
         console.log("ATA start")
       },
-      progress: (downloaded: number, total: number) => {
-        // console.log(`Got ${downloaded} out of ${total}`)
-      },
-      finished: vfs => {
-        // console.log("ATA done", vfs)
-      },
+      // 下载进度与完成回调暂时不消费入参，省略形参即可，无需声明未使用的名字
+      progress: () => {},
+      finished: () => {},
     },
   })
   return ata

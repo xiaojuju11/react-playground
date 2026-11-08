@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react'
-import { PlaygroundContext } from '../../ReactPlayground/PlaygroundContext.tsx'
+import { PlaygroundContext } from '../../ReactPlayground/context.ts'
 import { FileNameItem } from './FileNameItem.tsx'
 import styles from './index.module.scss'
 import { ENTRY_FILE_NAME, IMPORT_MAP_FILE_NAME } from '../../ReactPlayground/files.ts'

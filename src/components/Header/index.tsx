@@ -1,9 +1,9 @@
-import React, { useContext } from 'react'
+import { useContext } from 'react'
 import logoSvg from './icons/logo.svg'
 import styles from './icons/index.module.scss'
 import { downLoadFiles } from '../../ReactPlayground/utils'
 
-import { PlaygroundContext } from '../../ReactPlayground/PlaygroundContext'
+import { PlaygroundContext } from '../../ReactPlayground/context'
 
 export default function Header() {
   const { files } = useContext(PlaygroundContext)

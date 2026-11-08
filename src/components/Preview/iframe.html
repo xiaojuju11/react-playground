@@ -4,10 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
+  <script>
+    // 把 iframe 内的异常上报给宿主页面，由预览面板统一展示
+    (function () {
+      var REPORT_TYPE = 'react-playground:runtime-error'
+      function report(payload) {
+        try {
+          parent.postMessage({ type: REPORT_TYPE, payload: payload }, '*')
+        } catch (e) {}
+      }
+      window.addEventListener('error', function (event) {
+        var target = event.target
+        // 资源加载失败（link/img/script）不会走到 window.onerror 的 message 分支
+        if (target && target !== window && (target.src || target.href)) {
+          report({ message: '资源加载失败: ' + (target.src || target.href), source: 'resource' })
+          return
+        }
+        report({ message: event.message || String(event.error), source: event.filename })
+      }, true)
+      window.addEventListener('unhandledrejection', function (event) {
+        var reason = event.reason
+        report({
+          message: '未处理的 Promise 异常: ' + (reason && reason.message ? reason.message : String(reason)),
+        })
+      })
+    })()
+  </script>
 </head>
 <body>
   <script type="importmap"></script>
-  <script type="module" id="appSrc"></script>
   <div id="root"></div>
+  <script type="module" id="appSrc"></script>
 </body>
 </html>

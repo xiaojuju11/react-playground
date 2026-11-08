@@ -1,4 +1,4 @@
-import type { Files } from './PlaygroundContext'
+import type { Files } from './context'
 import main from './template/main.tsx?raw'  // ?raw 表示将文件内容作为字符串导入  === fs.readFileSync
 import App from './template/App.tsx?raw'
 import AppCSS from './template/App.css?raw'
