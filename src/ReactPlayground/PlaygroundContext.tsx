@@ -39,8 +39,13 @@ export const PlaygroundProvider = (props: PropsWithChildren) => {
   const updateFileName = useCallback((oldFileName: string, newFileName: string) => {
     setFiles((prevFiles) => {
       const oldFile = prevFiles[oldFileName]
-      // 空名字、重名、名字没变都不处理，避免覆盖掉已有文件
-      if (!oldFile || !newFileName || newFileName === oldFileName) return prevFiles
+      // 源文件不存在、空名字（含纯空格）、重名、名字没变都不处理，避免覆盖掉已有文件
+      if (
+        !oldFile ||
+        !newFileName.trim() ||
+        newFileName === oldFileName ||
+        prevFiles[newFileName]
+      ) return prevFiles
       return {
         ...omitFile(prevFiles, oldFileName),
         [newFileName]: {
