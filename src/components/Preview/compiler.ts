@@ -109,29 +109,49 @@ function babelTransform(filename: string, code: string, files: Files, urls: stri
 }
 
 function customResolver(files: Files, urls: string[], fromFile: string): PluginObj {
+  /** 把相对路径的说明符改写成可运行的 blob 地址；非相对路径（npm 包）原样保留 */
+  const rewrite = (source: { value: string }) => {
+    const modulePath = source.value
+    if (!modulePath.startsWith('.')) return
+
+    const file = resolveModule(files, modulePath, fromFile)
+    if (!file) {
+      throw new CompileFailure(fromFile, `找不到模块 "${modulePath}"`)
+    }
+
+    if (file.name.endsWith('.css')) {
+      // css 不能直接 import，转成运行时注入 <style> 的 js 模块
+      source.value = CssToJS(file, urls)
+    } else if (file.name.endsWith('.json')) {
+      source.value = JsonToJS(file, urls)
+    } else {
+      // 递归编译依赖，替换为 blob 地址
+      source.value = createBlobUrl(
+        babelTransform(file.name, file.value, files, urls),
+        urls,
+      )
+    }
+  }
+
   return {
     visitor: {
       ImportDeclaration(path) {
-        const modulePath = path.node.source.value
-        if (!modulePath.startsWith('.')) return
-
-        const file = resolveModule(files, modulePath, fromFile)
-        if (!file) {
-          throw new CompileFailure(fromFile, `找不到模块 "${modulePath}"`)
-        }
-
-        if (file.name.endsWith('.css')) {
-          // css 不能直接 import，转成运行时注入 <style> 的 js 模块
-          path.node.source.value = CssToJS(file, urls)
-        } else if (file.name.endsWith('.json')) {
-          path.node.source.value = JsonToJS(file, urls)
-        } else {
-          // 递归编译依赖，替换为 blob 地址
-          path.node.source.value = createBlobUrl(
-            babelTransform(file.name, file.value, files, urls),
-            urls,
-          )
-        }
+        rewrite(path.node.source)
+      },
+      ExportNamedDeclaration(path) {
+        // `export { x }` 没有 source，只有 `export { x } from './y'` 才需要解析
+        if (path.node.source) rewrite(path.node.source)
+      },
+      ExportAllDeclaration(path) {
+        rewrite(path.node.source)
+      },
+      CallExpression(path) {
+        // 动态 import('./y')：callee 是 Import 节点
+        const calleeType: string = path.node.callee.type
+        if (calleeType !== 'Import') return
+        const arg = path.node.arguments[0]
+        if (!arg || arg.type !== 'StringLiteral') return
+        rewrite(arg)
       },
     },
   }
