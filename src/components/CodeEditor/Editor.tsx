@@ -1,3 +1,5 @@
+// 必须在渲染 Monaco 之前完成本地实例与 worker 的装配，故放在最前面
+import { monaco } from './monaco-env.ts'
 import MonacoEditor from '@monaco-editor/react'
 import type { EditorProps, OnMount } from '@monaco-editor/react'
 import { createATA } from './Editor/ata.ts'
@@ -28,20 +30,17 @@ export default function Editor(props: Props) {
   // }`
 
   // 编辑器加载完毕执行的回调
-  const handleEditorMount: OnMount = (editor, monaco) => {
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_M, () => {
+  // 用 monaco-env 导出的本地实例而不是 onMount 的入参：onMount 的 monaco 参数按
+  // editor.api 声明，取不到 0.55 才有的顶层 typescript 命名空间
+  const handleEditorMount: OnMount = (editor) => {
+    // KeyCode.KEY_M 在 monaco 0.55 已被移除，统一用 KeyM
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyM, () => {
       editor.getAction('editor.action.formatDocument')?.run()
     })
 
-    // 兼容处理 jsx
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      jsx: monaco.languages.typescript.JsxEmit.Preserve,
-      esModuleInterop: true,
-    })
-
-    // 类型提示
+    // 编译选项（jsx/ES2020 等）已在 monaco-env.ts 里统一配置，这里只挂类型提示
     const ata = createATA((code, path) => {
-      monaco.languages.typescript.typescriptDefaults.addExtraLib(code, `file://${path}`)
+      monaco.typescript.typescriptDefaults.addExtraLib(code, `file://${path}`)
     })
 
     // 监听编辑器内容变化，更新类型提示
