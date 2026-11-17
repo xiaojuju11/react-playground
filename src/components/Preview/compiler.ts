@@ -3,6 +3,7 @@ import { transform } from '@babel/standalone'
 import type { Files } from '../../ReactPlayground/context'
 import { ENTRY_FILE_NAME } from '../../ReactPlayground/files'
 import type { EditorFile } from '../CodeEditor/Editor'
+import { resolveModulePath } from './resolveModule.ts'
 
 /** 编译期错误，带出出错的模块名，便于在预览面板上定位 */
 export interface CompileError {
@@ -18,10 +19,6 @@ export interface CompileResult {
   urls: string[]
 }
 
-const SCRIPT_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js']
-/** 解析相对路径时依次尝试的后缀，顺序决定了同名不同后缀文件的优先级 */
-const RESOLVE_EXTENSIONS = [...SCRIPT_EXTENSIONS, '.json', '.css']
-
 class CompileFailure extends Error {
   fileName: string
 
@@ -32,47 +29,9 @@ class CompileFailure extends Error {
   }
 }
 
-/** 归一化 './a/../b' 这类路径，扁平文件结构下最终就是一个文件名 */
-function normalizePath(path: string) {
-  const segments: string[] = []
-  path.split('/').forEach((segment) => {
-    if (!segment || segment === '.') return
-    if (segment === '..') {
-      segments.pop()
-      return
-    }
-    segments.push(segment)
-  })
-  return segments.join('/')
-}
-
-function dirname(path: string) {
-  const index = path.lastIndexOf('/')
-  return index === -1 ? '' : path.slice(0, index)
-}
-
-/** 由 import 的书写形式生成候选文件名：'./App' -> ['App', 'App.tsx', ..., 'App/index.tsx', ...] */
-function getCandidates(request: string, fromFile: string) {
-  const base = normalizePath(`${dirname(fromFile)}/${request}`)
-  const candidates = [base]
-  RESOLVE_EXTENSIONS.forEach((ext) => candidates.push(`${base}${ext}`))
-  RESOLVE_EXTENSIONS.forEach((ext) => candidates.push(`${base}/index${ext}`))
-  return candidates
-}
-
 function resolveModule(files: Files, request: string, fromFile: string) {
-  const candidates = getCandidates(request, fromFile)
-  for (const candidate of candidates) {
-    if (files[candidate]) return files[candidate]
-  }
-
-  // 兜底：允许忽略后缀的宽松匹配，兼容历史写法
-  const target = normalizePath(request)
-  const matchedKey = Object.keys(files).find((key) => {
-    if (!RESOLVE_EXTENSIONS.some((ext) => key.endsWith(ext))) return false
-    return key === target || key.replace(/\.[^./]+$/, '') === target
-  })
-  return matchedKey ? files[matchedKey] : undefined
+  const moduleName = resolveModulePath(Object.keys(files), request, fromFile)
+  return moduleName ? files[moduleName] : undefined
 }
 
 /** 新版 JSX 转换无需手动引 React，但项目用的是 classic runtime，这里补一个默认导入 */
