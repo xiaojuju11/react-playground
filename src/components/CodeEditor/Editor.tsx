@@ -3,6 +3,10 @@ import { monaco } from './monaco-env.ts'
 import MonacoEditor from '@monaco-editor/react'
 import type { EditorProps, OnMount } from '@monaco-editor/react'
 import { createATA } from './Editor/ata.ts'
+import { registerPrettierFormatting } from './Editor/prettier.ts'
+
+// 文档格式化 provider 全局注册一次：让内置 Format Document 与 Ctrl+M 真正可用
+registerPrettierFormatting(monaco)
 
 export interface EditorFile {
   name: string
