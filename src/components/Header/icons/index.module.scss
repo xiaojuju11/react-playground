@@ -18,4 +18,85 @@
         margin-right: 10px;
       }
     }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    // 保存状态：颜色只表达变化，具体含义交给文案
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #6b7280;
+      white-space: nowrap;
+
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #9ca3af;
+        transition: background 0.2s ease;
+      }
+
+      &[data-state='saving'] .dot {
+        background: #d97706;
+      }
+
+      &[data-state='saved'] .dot {
+        background: #16a34a;
+      }
+
+      &[data-state='error'] {
+        color: #b91c1c;
+
+        .dot {
+          background: #dc2626;
+        }
+      }
+    }
+
+    .button {
+      font-size: 13px;
+      line-height: 1;
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: 1px solid #d4d4d8;
+      background: #fff;
+      color: #27272a;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+
+      &:hover {
+        background: #f4f4f5;
+        border-color: #a1a1aa;
+      }
+
+      &:active {
+        background: #e4e4e7;
+      }
+
+      &:focus-visible {
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
+      }
+    }
+
+    .primary {
+      background: #18181b;
+      border-color: #18181b;
+      color: #fafafa;
+
+      &:hover {
+        background: #3f3f46;
+        border-color: #3f3f46;
+      }
+
+      &:active {
+        background: #27272a;
+      }
+    }
 }
