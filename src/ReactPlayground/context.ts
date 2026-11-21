@@ -1,6 +1,7 @@
 import { createContext, type Dispatch, type SetStateAction } from 'react'
 import type { EditorFile } from '../components/CodeEditor/Editor'
 import { APP_COMPONENT_FILE_NAME } from './files'
+import type { FormatPreferences } from './formatOptions'
 
 export interface Files {
   [key: string]: EditorFile
@@ -24,6 +25,10 @@ export interface PlaygroundContextValue {
   saveStatus: SaveStatus
   /** 上次成功保存的时间戳 */
   savedAt: number | null
+  /** 格式化偏好（缩进 / 分号 / 引号 / 行宽），改完立即落盘 */
+  formatPreferences: FormatPreferences
+  updateFormatPreferences: (patch: Partial<FormatPreferences>) => void
+  resetFormatPreferences: () => void
 }
 
 // context 单独放一个文件：既避免和 provider 组件混在一起影响 Fast Refresh，

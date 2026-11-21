@@ -40,7 +40,10 @@ export default function CodeEditor() {
     return () => {
       window.removeEventListener('pagehide', flushPending)
       document.removeEventListener('visibilitychange', onVisibilityChange)
-      debouncedChange.cancel()
+      // 切到另一个文件时这个 effect 会重建（debouncedChange 依赖 file.name），
+      // 这里必须先 flush 再释放：原来直接 cancel，500ms 防抖窗口内切文件，
+      // 最后几下按键就被静默丢掉了（防抖只保留最后一次调用，而那次调用是旧文件的）。
+      debouncedChange.flush()
     }
   }, [debouncedChange, flushWorkspace])
 

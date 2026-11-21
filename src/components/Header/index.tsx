@@ -1,6 +1,7 @@
 import { useContext } from 'react'
 import logoSvg from './icons/logo.svg'
 import styles from './icons/index.module.scss'
+import FormatSettings from './FormatSettings'
 import { downLoadFiles } from '../../ReactPlayground/utils'
 
 import { PlaygroundContext } from '../../ReactPlayground/context'
@@ -60,6 +61,7 @@ export default function Header() {
           <i className={styles.dot} aria-hidden="true" />
           {getStatusText(saveStatus, savedAt)}
         </span>
+        <FormatSettings />
         <button type="button" className={styles.button} onClick={handleReset}>
           重置
         </button>

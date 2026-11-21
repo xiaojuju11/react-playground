@@ -17,6 +17,11 @@ import type { Options } from 'prettier'
 // MarkerSeverity 是枚举（值），不能走 import type；monaco-editor 与 monaco-env
 // 里引的是同一个模块实例，不会重复打包
 import * as monaco from 'monaco-editor'
+import {
+  getCurrentFormatPreferences,
+  toPrettierOptions,
+  type FormatPreferences,
+} from '../../../ReactPlayground/formatOptions.ts'
 
 // prettier 的 esm 插件包导出的是数组或对象两种形态随版本变动，
 // 统一摊平成 plugins: [...] 的写法，避免运行时找不到 parser
@@ -41,10 +46,13 @@ export const getParserForLanguage = (language: string): string | undefined =>
 /**
  * 格式化代码。当前语言没有对应 parser 时返回 null（调用方自己决定怎么提示），
  * 代码本身有语法错误时抛出带位置信息的异常。
+ *
+ * 不传 prefs 时用当前偏好（Header 里的格式化设置），传了则按传入的值来。
  */
 export async function formatCode(
   code: string,
   language: string,
+  prefs: FormatPreferences = getCurrentFormatPreferences(),
 ): Promise<string | null> {
   const parser = getParserForLanguage(language)
   if (!parser) return null
@@ -52,9 +60,7 @@ export async function formatCode(
   return prettier.format(code, {
     parser,
     plugins,
-    semi: false,
-    singleQuote: true,
-    printWidth: 80,
+    ...toPrettierOptions(prefs),
   })
 }
 
@@ -83,14 +89,18 @@ export function getErrorPosition(error: unknown): {
   return null
 }
 
-/** 注册文档格式化 provider：内置 Format Document / Ctrl+M 会调用到这里 */
+/**
+ * 注册文档格式化 provider：内置 Format Document / Ctrl+M 会调用到这里。
+ * 每次格式化才去读偏好，改设置不用重新注册（provider 是全局单例，重复注册会叠加）。
+ */
 export function registerPrettierFormatting(
   monacoInstance: typeof monaco,
+  getPreferences: () => FormatPreferences = getCurrentFormatPreferences,
 ): void {
   Object.keys(PARSER_BY_LANGUAGE).forEach((language) => {
     monacoInstance.languages.registerDocumentFormattingEditProvider(language, {
       provideDocumentFormattingEdits(model) {
-        return formatCode(model.getValue(), language)
+        return formatCode(model.getValue(), language, getPreferences())
           .then((formatted) => {
             // 语法错误时 formatCode 会 reject，这里先把成功路径的 marker 清掉
             monacoInstance.editor.setModelMarkers(model, 'prettier', [])

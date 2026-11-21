@@ -23,6 +23,14 @@ import {
   saveWorkspace,
   type WorkspaceMeta,
 } from './storage.ts'
+import {
+  DEFAULT_FORMAT_PREFERENCES,
+  loadFormatPreferences,
+  sanitizeFormatPreferences,
+  saveFormatPreferences,
+  setCurrentFormatPreferences,
+  type FormatPreferences,
+} from './formatOptions.ts'
 
 const WORKSPACE_META: WorkspaceMeta = {
   entryFileName: ENTRY_FILE_NAME,
@@ -56,6 +64,35 @@ export const PlaygroundProvider = (props: PropsWithChildren) => {
     initialWorkspace.restored ? 'saved' : 'idle',
   )
   const [savedAt, setSavedAt] = useState<number | null>(initialWorkspace.savedAt)
+
+  // 格式化偏好和代码内容分开存：内容有防抖+脏标记，偏好是低频小对象，改一次写一次
+  const [formatPreferences, setFormatPreferences] = useState<FormatPreferences>(
+    () => loadFormatPreferences(getBrowserStorage()),
+  )
+  // monaco provider 在模块加载时注册，取不到 context，需要一份模块级镜像
+  const prefsRef = useRef(formatPreferences)
+  useEffect(() => {
+    setCurrentFormatPreferences(prefsRef.current)
+  }, [])
+
+  const updateFormatPreferences = useCallback(
+    (patch: Partial<FormatPreferences>) => {
+      const next = sanitizeFormatPreferences({ ...prefsRef.current, ...patch })
+      prefsRef.current = next
+      setCurrentFormatPreferences(next)
+      setFormatPreferences(next)
+      saveFormatPreferences(getBrowserStorage(), next)
+    },
+    [],
+  )
+
+  const resetFormatPreferences = useCallback(() => {
+    const next = { ...DEFAULT_FORMAT_PREFERENCES }
+    prefsRef.current = next
+    setCurrentFormatPreferences(next)
+    setFormatPreferences(next)
+    saveFormatPreferences(getBrowserStorage(), next)
+  }, [])
 
   // 落盘要用「最新值」，但 effect / 事件回调里读 state 可能拿到旧闭包，
   // 统一走 ref；写入 state 之前先更新 ref，保证 pagehide 时读到的就是最新的。
@@ -249,6 +286,9 @@ export const PlaygroundProvider = (props: PropsWithChildren) => {
     flushWorkspace: persistNow,
     saveStatus,
     savedAt,
+    formatPreferences,
+    updateFormatPreferences,
+    resetFormatPreferences,
   }), [
     selectedFileName,
     files,
@@ -261,6 +301,9 @@ export const PlaygroundProvider = (props: PropsWithChildren) => {
     persistNow,
     saveStatus,
     savedAt,
+    formatPreferences,
+    updateFormatPreferences,
+    resetFormatPreferences,
   ])
 
   return (
